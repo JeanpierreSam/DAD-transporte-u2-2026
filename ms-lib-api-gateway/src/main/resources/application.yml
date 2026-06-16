@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: ms-lib-api-gateway
+  config:
+    import: optional:configserver:http://localhost:9888
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:9761/eureka/
+  instance:
+    prefer-ip-address: true

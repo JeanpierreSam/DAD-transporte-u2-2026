@@ -1,0 +1,24 @@
+server:
+  port: 9080
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: ms-reserva
+          uri: lb://ms-reserva
+          predicates:
+            - Path=/api/reservas/**
+        - id: ms-auth-oauth2
+          uri: lb://ms-auth
+          predicates:
+            - Path=/oauth2/**
+        - id: ms-auth-jwks
+          uri: lb://ms-auth
+          predicates:
+            - Path=/.well-known/**
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:9081/.well-known/jwks.json

@@ -1,0 +1,22 @@
+server:
+  port: 9888
+
+spring:
+  application:
+    name: ms-lib-config-server
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: file:./config-repo
+  profiles:
+    active: native
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

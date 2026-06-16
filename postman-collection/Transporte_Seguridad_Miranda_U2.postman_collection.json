@@ -1,0 +1,601 @@
+{
+  "info": {
+    "name": "Transporte Seguridad Miranda U2",
+    "description": "Colección para probar el ecosistema de microservicios de transporte con seguridad OAuth2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:9080",
+      "type": "string"
+    },
+    {
+      "key": "auth_url",
+      "value": "http://localhost:9081",
+      "type": "string"
+    },
+    {
+      "key": "config_url",
+      "value": "http://localhost:9888",
+      "type": "string"
+    },
+    {
+      "key": "registry_url",
+      "value": "http://localhost:9761",
+      "type": "string"
+    },
+    {
+      "key": "reserva_url",
+      "value": "http://localhost:9082",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "client_id",
+      "value": "app-web-client",
+      "type": "string"
+    },
+    {
+      "key": "client_secret",
+      "value": "secret",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Infraestructura",
+      "item": [
+        {
+          "name": "Config Server - Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{config_url}}/actuator/health",
+              "host": ["{{config_url}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Verifica que el Config Server esté funcionando"
+          }
+        },
+        {
+          "name": "Config Server - Shared Config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{config_url}}/shared-config/default",
+              "host": ["{{config_url}}"],
+              "path": ["shared-config", "default"]
+            },
+            "description": "Obtiene la configuración compartida desde Config Server"
+          }
+        },
+        {
+          "name": "Config Server - Reserva Config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{config_url}}/ms-reserva/default",
+              "host": ["{{config_url}}"],
+              "path": ["ms-reserva", "default"]
+            },
+            "description": "Obtiene la configuración de ms-reserva desde Config Server"
+          }
+        },
+        {
+          "name": "Registry Server - Eureka Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{registry_url}}/",
+              "host": ["{{registry_url}}"],
+              "path": [""]
+            },
+            "description": "Abre el dashboard de Eureka para ver servicios registrados"
+          }
+        },
+        {
+          "name": "Registry Server - Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{registry_url}}/actuator/health",
+              "host": ["{{registry_url}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Verifica que Eureka Server esté funcionando"
+          }
+        },
+        {
+          "name": "Registry Server - Applications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{registry_url}}/eureka/apps",
+              "host": ["{{registry_url}}"],
+              "path": ["eureka", "apps"]
+            },
+            "description": "Lista todas las aplicaciones registradas en Eureka"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Auth (OAuth2)",
+      "item": [
+        {
+          "name": "JWKS - Public Keys",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{auth_url}}/.well-known/jwks.json",
+              "host": ["{{auth_url}}"],
+              "path": [".well-known", "jwks.json"]
+            },
+            "description": "Obtiene las claves públicas RSA para validación de JWT"
+          }
+        },
+        {
+          "name": "OpenID Configuration",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{auth_url}}/.well-known/openid-configuration",
+              "host": ["{{auth_url}}"],
+              "path": [".well-known", "openid-configuration"]
+            },
+            "description": "Obtiene la configuración de OpenID Connect"
+          }
+        },
+        {
+          "name": "Token - Password Grant (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "    console.log('Token guardado: ' + jsonData.access_token.substring(0, 50) + '...');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "{{client_secret}}",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "{{client_id}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "admin",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "admin",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{auth_url}}/oauth2/token",
+              "host": ["{{auth_url}}"],
+              "path": ["oauth2", "token"]
+            },
+            "description": "Obtiene token JWT con rol ADMIN para usuario admin"
+          }
+        },
+        {
+          "name": "Token - Password Grant (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "    console.log('Token guardado: ' + jsonData.access_token.substring(0, 50) + '...');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "{{client_secret}}",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "{{client_id}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "user",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "user",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{auth_url}}/oauth2/token",
+              "host": ["{{auth_url}}"],
+              "path": ["oauth2", "token"]
+            },
+            "description": "Obtiene token JWT con rol USER para usuario user"
+          }
+        },
+        {
+          "name": "Token - Client Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "    console.log('Token guardado: ' + jsonData.access_token.substring(0, 50) + '...');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "{{client_secret}}",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "{{client_id}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{auth_url}}/oauth2/token",
+              "host": ["{{auth_url}}"],
+              "path": ["oauth2", "token"]
+            },
+            "description": "Obtiene token JWT usando client credentials grant"
+          }
+        },
+        {
+          "name": "Token Introspection",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "{{client_secret}}",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "{{client_id}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{auth_url}}/oauth2/introspect",
+              "host": ["{{auth_url}}"],
+              "path": ["oauth2", "introspect"]
+            },
+            "description": "Verifica si un token es válido y obtiene sus claims"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Reservas (CRUD)",
+      "item": [
+        {
+          "name": "GET - Listar Reservas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/reservas",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "reservas"]
+            },
+            "description": "Lista todas las reservas (requiere rol USER o ADMIN)"
+          }
+        },
+        {
+          "name": "POST - Crear Reserva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nroReser\": \"R0000001\",\n  \"fechaReser\": \"2026-06-15\",\n  \"horaReser\": \"08:00:00\",\n  \"codCli\": \"C0001\",\n  \"idProg\": 1,\n  \"codDest\": \"D001\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/reservas",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "reservas"]
+            },
+            "description": "Crea una nueva reserva (requiere rol USER o ADMIN). Valida referencias vía Feign clients."
+          }
+        },
+        {
+          "name": "POST - Crear Reserva (Ejemplo 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nroReser\": \"R0000002\",\n  \"fechaReser\": \"2026-06-16\",\n  \"horaReser\": \"14:30:00\",\n  \"codCli\": \"C0002\",\n  \"idProg\": 2,\n  \"codDest\": \"D002\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/reservas",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "reservas"]
+            },
+            "description": "Crea otra reserva de ejemplo"
+          }
+        },
+        {
+          "name": "DELETE - Eliminar Reserva",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/reservas/R0000001",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "reservas", "R0000001"]
+            },
+            "description": "Elimina una reserva por número (requiere rol ADMIN)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Gateway",
+      "item": [
+        {
+          "name": "Gateway - Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/actuator/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Verifica que el API Gateway esté funcionando"
+          }
+        },
+        {
+          "name": "Gateway - Rutas (sin auth)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/reservas",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "reservas"]
+            },
+            "description": "Prueba acceso sin token - debe retornar 401 Unauthorized"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Pruebas de Seguridad",
+      "item": [
+        {
+          "name": "Acceso sin token (401)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/reservas",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "reservas"]
+            },
+            "description": "Debe retornar 401 Unauthorized - no hay token"
+          }
+        },
+        {
+          "name": "Token inválido (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer token_invalido_aqui"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/reservas",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "reservas"]
+            },
+            "description": "Debe retornar 401 - token malformado o inválido"
+          }
+        },
+        {
+          "name": "Token expirado (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTYwMDAwMDAwMCwiZXhwIjoxNjAwMDAwMDEwfQ.expired"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/reservas",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "reservas"]
+            },
+            "description": "Debe retornar 401 - token expirado"
+          }
+        },
+        {
+          "name": "DELETE sin rol ADMIN (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 403) {",
+                  "    console.log('OK: Se rechazó correctamente - se requiere rol ADMIN');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/reservas/R0000001",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "reservas", "R0000001"]
+            },
+            "description": "Usar token de usuario 'user' (sin rol ADMIN) - debe retornar 403 Forbidden"
+          }
+        }
+      ]
+    }
+  ]
+}

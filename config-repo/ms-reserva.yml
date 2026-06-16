@@ -1,0 +1,22 @@
+server:
+  port: 9082
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5442/reserva_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:9081/.well-known/jwks.json

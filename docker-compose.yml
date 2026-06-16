@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres-reserva
+    environment:
+      POSTGRES_DB: reserva_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5442:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - transporte-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ms-lib-config-server:
+    build: ./ms-lib-config-server
+    container_name: config-server
+    ports:
+      - "9888:9888"
+    volumes:
+      - ./config-repo:/app/config-repo
+    networks:
+      - transporte-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ms-lib-registry-server:
+    build: ./ms-lib-registry-server
+    container_name: registry-server
+    ports:
+      - "9761:9761"
+    depends_on:
+      - ms-lib-config-server
+    networks:
+      - transporte-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ms-lib-api-gateway:
+    build: ./ms-lib-api-gateway
+    container_name: api-gateway
+    ports:
+      - "9080:9080"
+    depends_on:
+      - ms-lib-registry-server
+      - ms-auth
+    networks:
+      - transporte-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ms-auth:
+    build: ./ms-auth
+    container_name: ms-auth
+    ports:
+      - "9081:9081"
+    depends_on:
+      - ms-lib-registry-server
+    networks:
+      - transporte-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ms-reserva:
+    build: ./ms-reserva
+    container_name: ms-reserva
+    ports:
+      - "9082:9082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ms-lib-registry-server:
+        condition: service_healthy
+      ms-auth:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/reserva_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_PROFILES_ACTIVE: postgresql
+    networks:
+      - transporte-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+
+networks:
+  transporte-net:
+    driver: bridge
