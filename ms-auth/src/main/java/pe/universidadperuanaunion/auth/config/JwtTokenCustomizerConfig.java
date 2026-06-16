@@ -2,7 +2,6 @@ package pe.universidadperuanaunion.auth.config;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.context.annotation.Bean;
@@ -19,7 +18,7 @@ public class JwtTokenCustomizerConfig {
         return context -> {
             if (context.getTokenType().getValue().equals("id_token") ||
                     context.getTokenType().getValue().equals("access_token")) {
-                Collection<GrantedAuthority> authorities = context.getPrincipal().getAuthorities();
+                Collection<? extends GrantedAuthority> authorities = context.getPrincipal().getAuthorities();
                 List<String> roles = authorities.stream()
                         .map(GrantedAuthority::getAuthority)
                         .map(role -> role.startsWith("ROLE_") ? role.substring(5) : role)
