@@ -51,6 +51,36 @@ Sistema de transporte con microservicios Java 21 + Spring Boot 3.2.5 + Spring Cl
 
 ---
 
+## Estrategia de Puertos Dual
+
+Cada servicio tiene un puerto local como fallback en su `application.yml`, pero en producción usa el Config Server.
+
+| Entorno | Estrategia | Puerto | Config Server |
+|---------|-----------|--------|---------------|
+| **dev** | Local fallback | Definido en `application.yml` | Opcional |
+| **test** | Config Server | Definido en `config-repo/` | Requerido |
+| **prod** | Config Server | Definido en `config-repo/` | Requerido |
+
+### Puertos locales (fallback)
+| Servicio | Puerto local | Archivo |
+|----------|-------------|---------|
+| `ms-lib-api-gateway` | 9080 | `ms-lib-api-gateway/src/main/resources/application.yml` |
+| `ms-auth` | 9081 | `ms-auth/src/main/resources/application.yml` |
+| `ms-reserva` | 9082 | `ms-reserva/src/main/resources/application.yml` |
+
+### Orden de inicio recomendado
+```
+1. ConfigServerApplication    ← Puerto 9888 (siempre primero)
+2. RegistryServerApplication  ← Puerto 9761
+3. AuthApplication            ← Puerto 9081
+4. ApiGatewayApplication      ← Puerto 9080
+5. ReservaApplication         ← Puerto 9082
+```
+
+> **Nota:** Con los puertos locales como fallback, los servicios pueden iniciar en cualquier orden sin conflictos de puertos, pero requieren que sus dependencias (Eureka, Config Server, Auth) estén disponibles para funcionar correctamente.
+
+---
+
 ## Estructura del Proyecto
 
 ```
@@ -164,6 +194,10 @@ spring:
 - Valida tokens contra JWKS de ms-auth: `http://localhost:9081/.well-known/jwks.json`
 - Rutas `/oauth2/**` y `/.well-known/**` son públicas
 - Rutas `/api/**` requieren autenticación
+- Bean `ReactiveJwtDecoder` configurado explícitamente con `NimbusReactiveJwtDecoder`
+
+### Fix aplicado
+- **`SecurityConfig.java`:** Agregado bean `ReactiveJwtDecoder` usando `NimbusReactiveJwtDecoder.withJwkSetUri()` para resolver error `No qualifying bean of type 'ReactiveJwtDecoder' available`. Spring Cloud Gateway (WebFlux) requiere decoder reactivo explícito.
 
 ---
 
@@ -426,14 +460,6 @@ Transporte Seguridad Miranda U2
 | 2026-06-15 | Lombok `@Data` en DTOs (reemplaza getters/setters) | `ReservaRequestDto.java`, `ReservaResponseDto.java` |
 | 2026-06-15 | Fix: `Collection<? extends GrantedAuthority>` | `JwtTokenCustomizerConfig.java:22` |
 | 2026-06-15 | Fix: Puerto PostgreSQL 5432 → 5442 | `docker-compose.yml`, `config-repo/ms-reserva.yml`, `application.yml` (perfil postgresql) |
+| 2026-06-15 | Fix: `ReactiveJwtDecoder` bean en Gateway | `ms-lib-api-gateway/.../SecurityConfig.java` |
 | 2026-06-15 | Postman Collection con 5 carpetas y 22 requests | `postman-collection/*` |
-
----
-
-## Referencias
-
-- **Repo de referencia:** https://github.com/kakatsumi/transporte-examen-microservicio
-- **Spring Boot:** 3.2.5
-- **Spring Cloud:** 2023.0.1
-- **Java:** 21
-- **PostgreSQL:** 16-alpine
+| 2026-06-15 | Estrategia dual de puertos (local fallback + Config Server) | `application.yml` (auth, gateway, reserva), `README.md` |
